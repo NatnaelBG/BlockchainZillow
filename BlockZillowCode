@@ -1,0 +1,99 @@
+pragma solidity ^0.6.0;
+
+contract ZillowBlock {
+
+    /* */
+    event Transfer(address indexed _owner, address indexed _buyer, uint256 indexed _propertyhash);
+    address private _owner;
+    /* creating the Property data structure which will have the following properties*/
+    struct Property {
+        address propertyOwner;
+        uint propertyhash;
+        string propertyLocation;
+        bool ForSale;
+        uint Price;
+    }
+
+    /* creating the Owner data structure which will have the following properties*/
+    struct Owner {
+        address _owner;
+        address Agent;
+        uint numberOfProperties;
+    }
+
+    /* creating the buyer data structure which will have the following properties*/
+    struct buyer {
+        address _address;
+    }
+
+    /* The following mappings will make searching for data easier.
+    some of them are public so users can easily view data from the contract*/
+    mapping(address => Property) public ownerToProperty;
+    mapping(uint => string) public PropertyHashToPropertyLocation;
+    mapping(uint => address) public PropertyHashToOwner;
+    mapping (address => uint) ownerPropertyCount;
+    mapping (uint => Property) public propertyhashToProperty;
+    Property[] public AllProperties;
+    Property[] public Ownerproperties;
+    Property[] Buyerproperties;
+    Property[] public ForSaleproperties;
+    
+
+
+    /* The following function will list a property to the market
+    it take the owner's address, property location, for sale status and property price
+    It will use owner's address, property location, for sale status and price to generate
+    a unique hash for the property which can be used to look up the location and owner
+    of the property.
+
+    If the owner set the property's for sale bool as true, it will be included in the 
+    forSaleproperties list. Whether the propert status is for sale or not, it will be 
+    added to the all properties list.
+    
+    Anyone accessing the smart contract can use the owner's address and/or the property hash
+    to find more info about the property*/
+
+    function ListProperty(address _owner, string memory _propertyLocation, bool _ForSale, uint _price) public {
+        _owner = msg.sender;
+        uint propertyhash = uint(keccak256(abi.encodePacked(now, msg.sender, _propertyLocation, _ForSale, _price)));
+        Property memory newProperty = Property(_owner, propertyhash, _propertyLocation, _ForSale, _price);
+        AllProperties.push(newProperty);
+        Ownerproperties.push(newProperty);
+        ownerToProperty[_owner] = newProperty;
+        PropertyHashToOwner[propertyhash] = _owner;
+        propertyhashToProperty[propertyhash] = newProperty;
+        PropertyHashToPropertyLocation[propertyhash] = _propertyLocation;
+        bool ForSale = _ForSale;
+        if (ForSale = true) {
+            ForSaleproperties.push(newProperty);
+        }
+        
+    }
+
+    /* The following function will be used to transfer ownership of property from
+    one owner to another. It will take owner's address, buyer's address and property hash.
+    
+    It will automatically set the property forSale bool as "false" which will automatically 
+    delist the property from the marketplace. The owner can then use the ListProperty function
+    to list the property back to the market*/
+    function transferOwnership(address _owner, address _buyer, uint propertyhash) public {
+        require(msg.sender == _owner);
+        ownerPropertyCount[msg.sender]--;
+        ownerPropertyCount[_buyer]--;
+        ownerToProperty[_buyer] = propertyhashToProperty[propertyhash];
+        propertyhashToProperty[propertyhash].ForSale = false; //updates forsale bool to false
+        emit Transfer(_owner, _buyer, propertyhash);
+
+        // updatedProperty = Property(_buyer,propertyhash);
+        // ListProperty()
+        // AllProperties.push()
+    // }
+    } 
+
+    function deListProperty(uint propertyhash) public {
+        require(msg.sender == _owner);
+        propertyhashToProperty[propertyhash].ForSale = false;
+    }
+
+
+}
