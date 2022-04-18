@@ -25,6 +25,13 @@ contract ZillowBlock {
     struct buyer {
         address _address;
     }
+    
+    /* we use the following modifier to ensure only the owner(person calling the contract) of the contract
+    can perform functions/actions it is applied to*/
+    modifier onlyOwner() {
+        require(msg.sender == _owner, 'Not owner');
+        _;
+    }
 
     /* The following mappings will make searching for data easier.
     some of them are public so users can easily view data from the contract*/
@@ -53,7 +60,7 @@ contract ZillowBlock {
     Anyone accessing the smart contract can use the owner's address and/or the property hash
     to find more info about the property*/
 
-    function ListProperty(address _owner, string memory _propertyLocation, bool _ForSale, uint _price) public {
+    function ListProperty(address _owner, string memory _propertyLocation, bool _ForSale, uint _price) public onlyOwner{
         _owner = msg.sender;
         uint propertyhash = uint(keccak256(abi.encodePacked(now, msg.sender, _propertyLocation, _ForSale, _price)));
         Property memory newProperty = Property(_owner, propertyhash, _propertyLocation, _ForSale, _price);
@@ -76,24 +83,36 @@ contract ZillowBlock {
     It will automatically set the property forSale bool as "false" which will automatically 
     delist the property from the marketplace. The owner can then use the ListProperty function
     to list the property back to the market*/
-    function transferOwnership(address _owner, address _buyer, uint propertyhash) public {
-        require(msg.sender == _owner);
+    function transferOwnership(address _owner, address _buyer, uint propertyhash) public onlyOwner {
         ownerPropertyCount[msg.sender]--;
         ownerPropertyCount[_buyer]--;
         ownerToProperty[_buyer] = propertyhashToProperty[propertyhash];
         propertyhashToProperty[propertyhash].ForSale = false; //updates forsale bool to false
         emit Transfer(_owner, _buyer, propertyhash);
-
-        // updatedProperty = Property(_buyer,propertyhash);
-        // ListProperty()
-        // AllProperties.push()
-    // }
     } 
 
-    function deListProperty(uint propertyhash) public {
-        require(msg.sender == _owner);
+    function deListProperty(uint propertyhash) public onlyOwner{
         propertyhashToProperty[propertyhash].ForSale = false;
     }
 
 
+    /* The following sell function will list the property to marketplace by 
+    adding it to the ForSaleproperties list from which buyers can access it*/
+    function sellProperty(uint propertyhash) public onlyOwner{
+        Property memory newProperty = propertyhashToProperty[propertyhash];
+        propertyhashToProperty[propertyhash].ForSale = false;
+        ForSaleproperties.push(newProperty);
+    }
+
+
+    /* The follwing is a buy function. It is a payable function which means it accepts a payment.
+    It will use the property's hash as input*/
+    function buyProperty(uint _propertyhash) public payable onlyOwner {
+        address _owner;
+        address _originalOwner;
+        PropertyHashToOwner[_propertyhash] = _originalOwner;
+        Property memory _property = propertyhashToProperty[_propertyhash];
+        require(_property.ForSale = true && msg.value >= _property.Price);
+        transferOwnership(_originalOwner, _owner, _propertyhash);
+    }
 }
