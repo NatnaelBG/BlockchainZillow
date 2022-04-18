@@ -1,4 +1,4 @@
-pragma solidity ^0.6.0;
+pragma solidity ^0.8.0;
 
 contract ZillowBlock {
 
@@ -62,7 +62,7 @@ contract ZillowBlock {
 
     function ListProperty(address _owner, string memory _propertyLocation, bool _ForSale, uint _price) public onlyOwner{
         _owner = msg.sender;
-        uint propertyhash = uint(keccak256(abi.encodePacked(now, msg.sender, _propertyLocation, _ForSale, _price)));
+        uint propertyhash = uint(keccak256(abi.encodePacked(msg.sender, _propertyLocation, _ForSale, _price)));
         Property memory newProperty = Property(_owner, propertyhash, _propertyLocation, _ForSale, _price);
         AllProperties.push(newProperty);
         Ownerproperties.push(newProperty);
